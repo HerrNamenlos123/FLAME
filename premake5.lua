@@ -1,39 +1,25 @@
--- Retrieve the project name
-newoption { trigger = "projectname", description = "Name of the generated project" }
-local projectName = _OPTIONS["projectname"]
-if projectName == nil then print("The project name was not specified! --projectname=YourApplication") end
 
--- Main Solution
-workspace (projectName)
-    configurations { "Debug", "Release" }
-
-    platforms { "x64" }
-    defaultplatform "x64"
-    startproject (projectName)
-    
-    filter "system:not windows"
-    	location "build"
-    filter {}
+-- Utility functions
+function appendTable(tableA, tableB)
+    for _,v in ipairs(tableB) do 
+        table.insert(tableA, v) 
+    end
+end
 
 -- Include the subprojects
-include "modules/FLAME_Protocol"
+include "modules/NetLib"
 
--- Actual project
-project (projectName)
-    kind "ConsoleApp"
+-- Main library project
+project "FLAME_Protocol"
+    kind "StaticLib"
     language "C++"
     cppdialect "C++17"
     staticruntime "on"
     location "build"
+    targetname "FLAME_Protocol"
     targetdir "bin/%{cfg.buildcfg}"
-    targetname (projectName)
-    architecture "x86_64"
-
-    pchheader "pch.h"
-    pchsource "src/pch.cpp"
-
-    -- Configuration filters, filters are active up to the next filter statement
-    -- Indentation is purely visual
+    --system "Windows"
+    --architecture "x86_64"
 
     filter "configurations:Debug"
         defines { "DEBUG", "_DEBUG", "NDEPLOY" }
@@ -64,10 +50,25 @@ project (projectName)
 
     
     -- Main source files
-    files { "include/**", "src/**" }
+    files ({ "include/**", "src/**" })
 
+    
     -- NetLib dependency
-    dependson "FLAME_Protocol"
-    includedirs (FLAMEPROTOCOL_INCLUDE_DIRS)
-    libdirs (FLAMEPROTOCOL_LINK_DIRS)
-    links (FLAMEPROTOCOL_LINKS)
+    dependson "NetLib"
+    includedirs (NETLIB_INCLUDE_DIRS)
+    libdirs (NETLIB_LINK_DIRS)
+    links (NETLIB_LINKS)
+
+
+
+
+    -- Include and linker information for premake projects using this library
+    FLAMEPROTOCOL_INCLUDE_DIRS = {}
+    appendTable(FLAMEPROTOCOL_INCLUDE_DIRS, _includedirs)
+
+    FLAMEPROTOCOL_LINK_DIRS = {}
+    appendTable(FLAMEPROTOCOL_LINK_DIRS, _SCRIPT_DIR .. "/bin/%{cfg.buildcfg}/")
+    appendTable(FLAMEPROTOCOL_LINK_DIRS, NETLIB_LINK_DIRS)
+
+    FLAMEPROTOCOL_LINKS = { "FLAME_Protocol" }
+    appendTable(FLAMEPROTOCOL_LINKS, NETLIB_LINKS)
