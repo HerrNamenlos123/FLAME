@@ -1,0 +1,3 @@
+[submodule "modules/FLAME_Protocol"]
+	path = modules/FLAME_Protocol
+	url = https://github.com/HerrNamenlos123/FLAME_Protocol.git
