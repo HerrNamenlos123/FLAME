@@ -7,16 +7,16 @@ function appendTable(tableA, tableB)
 end
 
 -- Include the subprojects
-include "modules/NetLib"
+include "modules/FLAME_Protocol"
 
 -- Main library project
-project "FLAME_Protocol"
+project "FLAME"
     kind "StaticLib"
     language "C++"
     cppdialect "C++17"
     staticruntime "on"
     location "build"
-    targetname "FLAME_Protocol"
+    targetname "FLAME"
     targetdir "bin/%{cfg.buildcfg}"
     --system "Windows"
     --architecture "x86_64"
@@ -53,22 +53,22 @@ project "FLAME_Protocol"
     files ({ "include/**", "src/**" })
 
     
-    -- NetLib dependency
-    dependson "NetLib"
-    includedirs (NETLIB_INCLUDE_DIRS)
-    libdirs (NETLIB_LINK_DIRS)
-    links (NETLIB_LINKS)
+    -- FLAME_Protocol dependency
+    dependson "FLAME_Protocol"
+    includedirs (FLAMEPROTOCOL_INCLUDE_DIRS)
+    libdirs (FLAMEPROTOCOL_LINK_DIRS)
+    links (FLAMEPROTOCOL_LINKS)
 
 
 
 
     -- Include and linker information for premake projects using this library
-    FLAMEPROTOCOL_INCLUDE_DIRS = {}
-    appendTable(FLAMEPROTOCOL_INCLUDE_DIRS, _includedirs)
+    FLAME_INCLUDE_DIRS = {}
+    appendTable(FLAME_INCLUDE_DIRS, _includedirs)
 
-    FLAMEPROTOCOL_LINK_DIRS = {}
-    appendTable(FLAMEPROTOCOL_LINK_DIRS, _SCRIPT_DIR .. "/bin/%{cfg.buildcfg}/")
-    appendTable(FLAMEPROTOCOL_LINK_DIRS, NETLIB_LINK_DIRS)
+    FLAME_LINK_DIRS = {}
+    appendTable(FLAME_LINK_DIRS, _SCRIPT_DIR .. "/bin/%{cfg.buildcfg}/")
+    appendTable(FLAME_LINK_DIRS, FLAMEPROTOCOL_LINK_DIRS)
 
-    FLAMEPROTOCOL_LINKS = { "FLAME_Protocol" }
-    appendTable(FLAMEPROTOCOL_LINKS, NETLIB_LINKS)
+    FLAME_LINKS = { "FLAME" }
+    appendTable(FLAME_LINKS, FLAMEPROTOCOL_LINKS)
