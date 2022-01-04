@@ -7,8 +7,8 @@ if projectName == nil then print("The project name was not specified! --projectn
 workspace (projectName)
     configurations { "Debug", "Release" }
 
-    --platforms { "x86", "x64" }
-    --defaultplatform "x86"
+    platforms { "x64" }
+    defaultplatform "x64"
     startproject (projectName)
     
     filter "system:not windows"
@@ -27,6 +27,7 @@ project (projectName)
     location "build"
     targetdir "bin/%{cfg.buildcfg}"
     targetname (projectName)
+    architecture "x86_64"
 
     pchheader "pch.h"
     pchsource "src/pch.cpp"

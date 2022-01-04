@@ -33,5 +33,7 @@
 
 bin
 build
+*.sln
+.vs
 !premake5/**
 !modules/**
