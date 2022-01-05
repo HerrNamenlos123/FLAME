@@ -8,7 +8,7 @@ end
 
 -- Include the subprojects
 include "modules/FLAME_Protocol"
-
+include "modules/NetLib"
 -- Main library project
 project "FLAME"
     kind "StaticLib"
@@ -59,6 +59,13 @@ project "FLAME"
     libdirs (FLAMEPROTOCOL_LINK_DIRS)
     links (FLAMEPROTOCOL_LINKS)
 
+    -- NetLib dependency
+    dependson "NetLib"
+    includedirs (NETLIB_INCLUDE_DIRS)
+    libdirs (NETLIB_LINK_DIRS)
+    links (NETLIB_LINKS)
+
+
 
 
 
@@ -69,6 +76,8 @@ project "FLAME"
     FLAME_LINK_DIRS = {}
     appendTable(FLAME_LINK_DIRS, _SCRIPT_DIR .. "/bin/%{cfg.buildcfg}/")
     appendTable(FLAME_LINK_DIRS, FLAMEPROTOCOL_LINK_DIRS)
+    appendTable(FLAMEPROTOCOL_LINK_DIRS, NETLIB_LINK_DIRS)
 
     FLAME_LINKS = { "FLAME" }
     appendTable(FLAME_LINKS, FLAMEPROTOCOL_LINKS)
+    appendTable(FLAMEPROTOCOL_LINKS, NETLIB_LINKS)
