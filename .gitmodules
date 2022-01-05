@@ -1,3 +1,6 @@
 [submodule "modules/FLAME_Protocol"]
 	path = modules/FLAME_Protocol
 	url = https://github.com/HerrNamenlos123/FLAME_Protocol.git
+[submodule "modules/NetLib"]
+	path = modules/NetLib
+	url = https://github.com/HerrNamenlos123/NetLib.git
