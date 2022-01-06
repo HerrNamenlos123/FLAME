@@ -47,7 +47,7 @@ void FlameTest() {
 
 	NetLib::SetLogLevel(NetLib::LOG_LEVEL_INFO);
 
-	PacketData pd;
+	FLAME_Protocol::PacketData pd;
 	pd.axis1 = 10;
 	pd.axis2 = 20;
 	pd.axis3 = 30;
@@ -55,12 +55,12 @@ void FlameTest() {
 	pd.id = 1;
 	pd.additional = 22;
 
-	Packet packet; 
+	FLAME_Protocol::Packet packet;
 	generatePacket(&packet, &pd);
 
 	
-	PacketData pd1;
-	if (parsePacket(&packet, &pd1)) {
+	FLAME_Protocol::PacketData pd1;
+	if (FLAME_Protocol::parsePacket(&packet, &pd1)) {
 		if (pd.axis1 == pd1.axis1) {
 			std::cout << "Axis1 are the same" << std::endl;
 		}
