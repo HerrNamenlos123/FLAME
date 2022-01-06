@@ -1,4 +1,6 @@
 #pragma once
 
+#include <stdint.h>
+
+uint64_t getMicros();
 void FlameTest();
-void help(uint8_t* packet, size_t packetSize);

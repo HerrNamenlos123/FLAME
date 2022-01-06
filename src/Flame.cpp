@@ -1,24 +1,18 @@
 
-#include<string>
-#include<iostream>
+#include <string>
+#include <iostream>
+#include <chrono>
 
+#include "Log.h"
 #include "FLAME_Protocol.h"
 #include "NetLib.h"
 
-#include "spdlog/spdlog.h"
-
-void logPacket(uint8_t* data, size_t length, const char* ipAddress, uint16_t port) {
-	std::string str = "";
-	for (size_t i = 0; i < length; i++) {
-		str += std::to_string(data[i]);
-		str += ", ";
-	}
-	str.pop_back();
-	str.pop_back();
-	printf("UDP packet sent to %s:%d -> [%s] -> \"%s\"", ipAddress, port, str.c_str(), data);
+uint64_t getMicros() {
+	using namespace std::chrono;
+	return duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
 }
 
-void help(uint8_t* packet, size_t packetSize) {
+void packetReceived(uint8_t* packet, size_t packetSize) {
 	//printf("Recived packet%s", packet);
 
 	FLAME_Protocol::Packet pk;
@@ -27,12 +21,12 @@ void help(uint8_t* packet, size_t packetSize) {
 		FLAME_Protocol::PacketData pd1;
 
 		if (parsePacket(&pk, &pd1)) {
-			std::cout << pd1.axis1 << " = Axis1" << std::endl;
-			std::cout << pd1.axis2 << " = Axis2" << std::endl;
-			std::cout << pd1.axis3 << " = Axis3" << std::endl;
-			std::cout << pd1.axis4 << " = Axis4" << std::endl;
-			std::cout << (int)pd1.id << " = ID" << std::endl;
-			std::cout << pd1.additional << " = Addionial" << std::endl;
+			LOG_WARN("Axis1 = {}", pd1.axis1);
+			LOG_WARN("Axis2 = {}", pd1.axis2);
+			LOG_WARN("Axis3 = {}", pd1.axis3);
+			LOG_WARN("Axis4 = {}", pd1.axis4);
+			LOG_WARN("id = {}", pd1.id);
+			LOG_WARN("Additional = {}", pd1.additional);
 
 		}
 		else {
@@ -91,20 +85,20 @@ void FlameTest() {
 	
 	
 
-	NetLib::UDPServer us(help, 22500);
+	NetLib::UDPServer us(packetReceived, 22500);
 
-	for (size_t i = 0; i < 1000000000; i++)
-	{
-		for (size_t j = 0; j < 1000000000; j++)
-		{
+	uint64_t old = getMicros();
+	uint64_t interval = 1000000;
+	while (true) {
+		if (getMicros() >= old + interval) {
+			old = getMicros();
 
+			uc.send(packet.data, 23);
+			uc.send(packet.data, 23);
+			uc.send(packet.data, 23);
+			uc.send(packet.data, 23);
+			uc.send(packet.data, 23);
 		}
-		uc.send(packet.data, 23);
-		uc.send(packet.data, 23);
-		uc.send(packet.data, 23);
-		uc.send(packet.data, 23);
-		uc.send(packet.data, 23);
-
 	}
 
 	
