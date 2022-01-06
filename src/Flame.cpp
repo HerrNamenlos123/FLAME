@@ -16,10 +16,34 @@ void logPacket(uint8_t* data, size_t length, const char* ipAddress, uint16_t por
 }
 
 void help(uint8_t* packet, size_t packetSize) {
-	printf("Recived packet%s", packet);
+	//printf("Recived packet%s", packet);
+
+	FLAME_Protocol::Packet pk;
+	if (packetSize == FLAME_PROTOCOL_STANDARD_PACKET_LENGTH) {
+		memcpy(pk.data, packet, packetSize);
+		FLAME_Protocol::PacketData pd1;
+
+		if (parsePacket(&pk, &pd1)) {
+			std::cout << pd1.axis1 << " = Axis1" << std::endl;
+			std::cout << pd1.axis2 << " = Axis2" << std::endl;
+			std::cout << pd1.axis3 << " = Axis3" << std::endl;
+			std::cout << pd1.axis4 << " = Axis4" << std::endl;
+			std::cout << (int)pd1.id << " = ID" << std::endl;
+			std::cout << pd1.additional << " = Addionial" << std::endl;
+
+		}
+		else {
+			std::cout << "Wrong Packet" << std::endl;
+		}
+	}
+	
+
 }
 
 void FlameTest() {
+
+	NetLib::SetLogLevel(NetLib::LOG_LEVEL_INFO);
+
 	PacketData pd;
 	pd.axis1 = 10;
 	pd.axis2 = 20;
@@ -31,8 +55,7 @@ void FlameTest() {
 	Packet packet; 
 	generatePacket(&packet, &pd);
 
-	logPacket(packet.data, 23, "localhost", 0);
-
+	
 	PacketData pd1;
 	if (parsePacket(&packet, &pd1)) {
 		if (pd.axis1 == pd1.axis1) {
@@ -59,11 +82,11 @@ void FlameTest() {
 		std::cout << "Wrong Packet" << std::endl;
 	}
 
-	//NetLib::UDPClient uc("10.20.85.175", 22500);
-	NetLib::UDPClient uc("10.20.255.255", 22500);
+	NetLib::UDPClient uc("10.20.85.175", 22500);
+	//NetLib::UDPClient uc("10.20.255.255", 22500);
 	
 	
-	logPacket(packet.data, 23, "10.20.85.175", 22500);
+	
 
 	NetLib::UDPServer us(help, 22500);
 
