@@ -67,6 +67,8 @@ void packetReceived(uint8_t* packet, size_t packetSize) {
 
 void FlameTest() {
 
+	NetLib::UDPServer us(packetReceived, 22500);
+
 	auto interfaces = NetLib::GetNetworkInterfaces();
 
 	//Send Discovery Packet
@@ -76,7 +78,9 @@ void FlameTest() {
 	for (auto& ifc : interfaces) {
 		LOG_WARN("IP: {}, Broadcast address: {}", ifc.address, NetLib::CreateBroadcastAddress(ifc));
 
-		NetLib::SendUDP(NetLib::CreateBroadcastAddress(ifc), 22500, discoveryBuffer, FLAME_PROTOCOL_DISCOVERY_PACKET_LENGTH);
+		//NetLib::SendUDP(NetLib::CreateBroadcastAddress(ifc), 22500, discoveryBuffer, FLAME_PROTOCOL_DISCOVERY_PACKET_LENGTH);
+		NetLib::UDPClient client("10.20.255.255", 22500);
+		client.send(discoveryBuffer, FLAME_PROTOCOL_DISCOVERY_PACKET_LENGTH);
 	}
 
 	NetLib::SetLogLevel(NetLib::LOG_LEVEL_INFO);
@@ -107,16 +111,15 @@ void FlameTest() {
 	else {
 		std::cout << "Wrong Packet" << std::endl;
 	}
-	NetLib::UDPServer us(packetReceived, 22500);
-	while (!isvalid) {
 
-	}
+	while (!isvalid);
+
 	NetLib::UDPClient uc(ipToStr2(ipAdress), 22500);
 	LOG_WARN("{}", ipToStr2(ipAdress));
 	
 
 	uint64_t old = getMicros();
-	uint64_t interval = 1000000;
+	uint64_t interval = 100000;
 	while (true) {
 		if (getMicros() >= old + interval) {
 			old = getMicros();
