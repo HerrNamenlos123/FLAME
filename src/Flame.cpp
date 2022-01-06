@@ -4,8 +4,11 @@
 #include <chrono>
 
 #include "Log.h"
+#include "Flame.h"
 #include "FLAME_Protocol.h"
 #include "NetLib.h"
+
+FLAME::Instance flameInstance;
 
 uint64_t getMicros() {
 	using namespace std::chrono;
@@ -30,7 +33,7 @@ void packetReceived(uint8_t* packet, size_t packetSize) {
 
 		}
 		else {
-			std::cout << "Wrong Packet" << std::endl;
+			LOG_ERROR("Packet invalid");
 		}
 	}
 	
@@ -38,6 +41,8 @@ void packetReceived(uint8_t* packet, size_t packetSize) {
 }
 
 void FlameTest() {
+
+	auto interfaces = NetLib::GetNetworkInterfaces();
 
 	NetLib::SetLogLevel(NetLib::LOG_LEVEL_INFO);
 
