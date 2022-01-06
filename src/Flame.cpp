@@ -1,8 +1,11 @@
-#include "FLAME_Protocol.h"
-#include "NetLib.h"
+
 #include<string>
 #include<iostream>
-using namespace FLAME_Protocol;
+
+#include "FLAME_Protocol.h"
+#include "NetLib.h"
+
+#include "spdlog/spdlog.h"
 
 void logPacket(uint8_t* data, size_t length, const char* ipAddress, uint16_t port) {
 	std::string str = "";

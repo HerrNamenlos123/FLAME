@@ -6,9 +6,12 @@ function appendTable(tableA, tableB)
     end
 end
 
+NETLIB_WANT_SPDLOG = true   -- We want to re-use the NetLib's spdlog module
+
 -- Include the subprojects
 include "modules/FLAME_Protocol"
 include "modules/NetLib"
+
 -- Main library project
 project "FLAME"
     kind "StaticLib"
@@ -64,6 +67,7 @@ project "FLAME"
     includedirs (NETLIB_INCLUDE_DIRS)
     libdirs (NETLIB_LINK_DIRS)
     links (NETLIB_LINKS)
+    defines (NETLIB_DEFINES)
 
 
 
