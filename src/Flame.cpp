@@ -1,4 +1,5 @@
 #include "FLAME_Protocol.h"
+#include "NetLib.h"
 #include<string>
 #include<iostream>
 using namespace FLAME_Protocol;
@@ -12,6 +13,10 @@ void logPacket(uint8_t* data, size_t length, const char* ipAddress, uint16_t por
 	str.pop_back();
 	str.pop_back();
 	printf("UDP packet sent to %s:%d -> [%s] -> \"%s\"", ipAddress, port, str.c_str(), data);
+}
+
+void help(uint8_t* packet, size_t packetSize) {
+	printf("Recived packet%s", packet);
 }
 
 void FlameTest() {
@@ -54,5 +59,29 @@ void FlameTest() {
 		std::cout << "Wrong Packet" << std::endl;
 	}
 
+	NetLib::UDPClient uc("10.20.86.112", 22500);
+
+	
+	
+	logPacket(packet.data, 23, "10.20.86.112", 22500);
+
+	NetLib::UDPServer us(help, 22500);
+
+	for (size_t i = 0; i < 1000000000; i++)
+	{
+		for (size_t j = 0; j < 1000000000; j++)
+		{
+
+		}
+		uc.send(packet.data, 23);
+		uc.send(packet.data, 23);
+		uc.send(packet.data, 23);
+		uc.send(packet.data, 23);
+		uc.send(packet.data, 23);
+
+	}
+
+	
 
 }
+
