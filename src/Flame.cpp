@@ -59,11 +59,11 @@ void FlameTest() {
 		std::cout << "Wrong Packet" << std::endl;
 	}
 
-	NetLib::UDPClient uc("10.20.86.112", 22500);
-
+	//NetLib::UDPClient uc("10.20.85.175", 22500);
+	NetLib::UDPClient uc("10.20.255.255", 22500);
 	
 	
-	logPacket(packet.data, 23, "10.20.86.112", 22500);
+	logPacket(packet.data, 23, "10.20.85.175", 22500);
 
 	NetLib::UDPServer us(help, 22500);
 
