@@ -12,6 +12,7 @@
 FLAME::Instance flameInstance;
 
 uint32_t ipAdress = 0;
+bool isvalid = false;
 
 std::string ipToStr2(uint32_t ip)
 {
@@ -29,13 +30,17 @@ uint64_t getMicros() {
 
 void packetReceived(uint8_t* packet, size_t packetSize) {
 	
-	if (packetSize == 0) return;
+	if (packetSize == 0) 
+		return;
+
 	if (packetSize == FLAME_PROTOCOL_DISCOVERY_RESPONSE_LENGTH) {
 
 		FLAME_Protocol::DiscoveryResponse dr;
 		if (FLAME_Protocol::parsePacket(&dr, packet)) {
 			ipAdress = dr.ipAddress;
+			isvalid = true;
 			LOG_WARN("IP = {}", dr.ipAddress);
+
 		}
 		else {
 			LOG_ERROR("Packet invalid");
@@ -65,17 +70,14 @@ void FlameTest() {
 	auto interfaces = NetLib::GetNetworkInterfaces();
 
 	//Send Discovery Packet
-	uint8_t discoveryBuffer[1];
+	uint8_t discoveryBuffer[FLAME_PROTOCOL_DISCOVERY_PACKET_LENGTH];
 	FLAME_Protocol::generatePacket(discoveryBuffer);
 
 	for (auto& ifc : interfaces) {
 		LOG_WARN("IP: {}, Broadcast address: {}", ifc.address, NetLib::CreateBroadcastAddress(ifc));
 
-		NetLib::UDPClient uc(NetLib::CreateBroadcastAddress(ifc), 22500);
-		uc.send(discoveryBuffer, 1);
+		NetLib::SendUDP(NetLib::CreateBroadcastAddress(ifc), 22500, discoveryBuffer, FLAME_PROTOCOL_DISCOVERY_PACKET_LENGTH);
 	}
-
-	return;
 
 	NetLib::SetLogLevel(NetLib::LOG_LEVEL_INFO);
 
@@ -105,10 +107,13 @@ void FlameTest() {
 	else {
 		std::cout << "Wrong Packet" << std::endl;
 	}
-
-	NetLib::UDPClient uc(ipToStr2(ipAdress), 22500);
-	
 	NetLib::UDPServer us(packetReceived, 22500);
+	while (!isvalid) {
+
+	}
+	NetLib::UDPClient uc(ipToStr2(ipAdress), 22500);
+	LOG_WARN("{}", ipToStr2(ipAdress));
+	
 
 	uint64_t old = getMicros();
 	uint64_t interval = 1000000;
