@@ -44,6 +44,12 @@ void FlameTest() {
 
 	auto interfaces = NetLib::GetNetworkInterfaces();
 
+	for (auto& ifc : interfaces) {
+		LOG_WARN("IP: {}, Broadcast address: {}", ifc.address, NetLib::CreateBroadcastAddress(ifc));
+	}
+
+	return;
+
 	NetLib::SetLogLevel(NetLib::LOG_LEVEL_INFO);
 
 	FLAME_Protocol::PacketData pd;
