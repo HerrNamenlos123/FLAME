@@ -19,7 +19,8 @@ uint32_t getMicros() {
 }
 
 uint32_t getLocalIP() {
-    return NetLib::ipToBytes(server.GetLocalIP());
+    //return NetLib::ipToBytes(server.GetLocalIP());
+    return NetLib::ipToBytes("10.20.85.208");
 }
 
 void writeUDP(uint32_t targetIP, uint16_t targetPort, uint8_t* data, uint8_t length) {
@@ -31,7 +32,8 @@ void updateUDP() {
     // Receive the packet
     auto packet = server.ReceivePacket();
     if (packet) {
-        FLAME_Protocol::PacketReceived(&flameInstance, &packet->data[0], (uint8_t)packet->data.size(), NetLib::ipToBytes(packet->remoteIP));
+        //FLAME_Protocol::PacketReceived(&flameInstance, &packet->data[0], (uint8_t)packet->data.size(), NetLib::ipToBytes(packet->remoteIP));
+        FLAME_Protocol::PacketReceived(&flameInstance, &packet->data[0], (uint8_t)packet->data.size(), NetLib::ipToBytes("176.85.20.10"));
     }
 
     // Send the Review packet
