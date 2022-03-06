@@ -7,7 +7,8 @@
 #include "FLAME_Protocol.h"
 #include "NetLib.h"
 
-FLAME::Instance instance;
+FLAME_Protocol::FLAME_Instance protocolInstance;
+FLAME::Instance flameInstance;
 
 uint32_t getMicros() {
 	using namespace std::chrono;
@@ -30,7 +31,7 @@ void packetReceived(uint8_t* packet, size_t packetSize) {
 	if (packetSize == FLAME_PROTOCOL_DISCOVERY_RESPONSE_LENGTH) {
 		FLAME_Protocol::DiscoveryResponse response;
 		if (FLAME_Protocol::parsePacket(&response, packet)) {
-			instance.setClientIP(response.ipAddress);
+			flameInstance.setClientIP(response.ipAddress);
 			//LOG_INFO("Received Discovery Packet from {}", instance.getClientIP());
 		}
 		else {
@@ -42,17 +43,11 @@ void packetReceived(uint8_t* packet, size_t packetSize) {
 	if (packetSize == FLAME_PROTOCOL_REVIEW_PACKET_LENGTH) {
 		FLAME_Protocol::ReviewPacket review;
 		if (parsePacket(&review, packet)) {
-			instance.setEndpoint(review.id, review.data);
-			//LOG_DEBUG("Received data packet: endpoint #{} = {}", review.id, review.data);
-			static uint32_t da = 0;
-			da++;
-			if (da != review.data) {
-				LOG_ERROR("ERROR: Data invalid! da={}, received={}", da, review.data);
-				da = review.data;
-			}
-			static uint32_t lastTime = 0;
-			LOG_DEBUG("Took {} ms", getMicros() - lastTime);
-			lastTime = getMicros();
+			flameInstance.setEndpoint(review.id, review.data);
+
+        	if (review.id >= 0 && review.id < sizeof(protocolInstance.registers) / sizeof(protocolInstance.registers[0])) {
+        	    protocolInstance.registers[review.id] = review.data;
+        	}
 		}
 		else {
 			LOG_ERROR("Packet invalid");
@@ -79,24 +74,36 @@ void sendDiscoveryPackets() {
 	for (auto& interface : interfaces) {
 		if (interface.address.length() > 0) {
 			if (SplitString(interface.address, '.')[0] != "127") {
-				//LOG_WARN("IP: {}, Broadcast address: {}", interface.address, NetLib::CreateBroadcastAddress(interface));
 				NetLib::SendUDP(NetLib::CreateBroadcastAddress(interface), 22500, discoveryBuffer, FLAME_PROTOCOL_DISCOVERY_PACKET_LENGTH, true);
 			}
 		}
 	}
 }
 
-std::vector<uint8_t> GenerateControlPacket(float axis1, float axis2, float axis3, float axis4, uint8_t endpointID, uint32_t additional) {
+std::vector<uint8_t> GenerateControlPacket() {
 	std::vector<uint8_t> buffer(FLAME_PROTOCOL_CONTROL_PACKET_LENGTH, 0);
+	static uint8_t endpointID = 4; 
 	FLAME_Protocol::ControlPacket cp;
-	cp.axis1 = axis1;
-	cp.axis2 = axis2;
-	cp.axis3 = axis3;
-	cp.axis4 = axis4;
+	cp.axis1 = protocolInstance.desiredAxis1;
+	cp.axis2 = protocolInstance.desiredAxis2;
+	cp.axis3 = protocolInstance.desiredAxis3;
+	cp.axis4 = protocolInstance.desiredAxis4;
 	cp.id = endpointID;
-	cp.additional = additional;
+	cp.additional = protocolInstance.registers[endpointID];
+	endpointID++;
+	if (endpointID >= sizeof(protocolInstance.registers) / sizeof(protocolInstance.registers[0])) {
+        endpointID = 4;
+    }
 	generatePacket(&cp, &buffer[0]);
 	return buffer;
+}
+
+void updateSystem() {
+
+	protocolInstance.safetyMode = false;
+	protocolInstance.desiredAxis1 = sin(getMicros() / 1000000.f) * 2;
+	LOG_INFO("Position: {}", (float)protocolInstance.desiredAxis1);
+
 }
 
 void FlameTest() {
@@ -108,29 +115,26 @@ void FlameTest() {
 
 	sendDiscoveryPackets();
 
-	while (instance.getClientIP().empty()) {}
+	while (flameInstance.getClientIP().empty()) {}
 
-	LOG_INFO("FLAME client discovered at {}", instance.getClientIP());
+	LOG_INFO("FLAME client discovered at {}", flameInstance.getClientIP());
 
 	uint64_t old = getMicros();
-	uint64_t interval = 500;
+	uint64_t interval = 10000;
 	while (true) {
 		if (getMicros() >= old + interval) {
 			old = getMicros();
 
-			if (instance.getClientIP() != currentIP) {
+			if (flameInstance.getClientIP() != currentIP) {
 				udpSender.reset();
-				currentIP = instance.getClientIP();
+				currentIP = flameInstance.getClientIP();
 				udpSender = std::make_unique<NetLib::UDPClient>(currentIP, FLAME_PROTOCOL_UDP_TARGET_PORT);
 			}
 
-			static uint32_t data = 0;
-			data++;
-			auto packet = GenerateControlPacket(1, 2, 3, 4, 27, data);
-
+			updateSystem();
 			if (udpSender) {
+				auto packet = GenerateControlPacket();
 				udpSender->send(&packet[0], packet.size());
-				LOG_TRACE("Sending packet: {}", data);
 			}
 		}
 	}
