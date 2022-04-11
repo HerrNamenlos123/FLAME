@@ -1,0 +1,7 @@
+[requires]
+asio/1.22.1
+spdlog/1.10.0
+
+[generators]
+cmake
+cmake_find_package

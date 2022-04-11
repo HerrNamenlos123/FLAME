@@ -108,13 +108,16 @@ void updateSystem() {
 
 void FlameTest() {
 
+	LOG_INFO("Constructing FLAME backend");
 	NetLib::SetLogLevel(NetLib::LOG_LEVEL_WARN);
 	NetLib::UDPServerAsync udpListener(packetReceived, FLAME_PROTOCOL_UDP_TARGET_PORT);
 	std::unique_ptr<NetLib::UDPClient> udpSender;
 	std::string currentIP = "";
 
+	LOG_INFO("Sending discovery packets");
 	sendDiscoveryPackets();
 
+	LOG_INFO("Waiting for responses");
 	while (flameInstance.getClientIP().empty()) {}
 
 	LOG_INFO("FLAME client discovered at {}", flameInstance.getClientIP());
