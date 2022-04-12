@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package FLAME_Protocol;
+
+message DiscoveryPacket {
+
+}
+
+message DiscoveryResponse {
+    uint32 ipAddress = 1;
+}
+
+message ControlPacket {
+
+    float desiredAxis1 = 1;
+    float desiredAxis2 = 2;
+    float desiredAxis3 = 3;
+    float desiredAxis4 = 4;
+
+    bool odrive0Axis0Error = 5;
+    bool odrive0Axis1Error = 6;
+    bool odrive0Error = 7;	
+    bool odrv0ClearErrors = 8;
+    bool odrive1Axis0Error = 9;
+    bool odrive1Axis1Error = 10;
+    bool odrive1Error = 11;	
+    bool odrv1ClearErrors = 12;
+
+    bool safetyMode = 13;
+}
+
+message ReviewPacket {
+    
+    float actualAxis1 = 1;
+    float actualAxis2 = 2;
+    float actualAxis3 = 3;
+    float actualAxis4 = 4;
+
+    bool odrive0Axis0Error = 5;
+    bool odrive0Axis1Error = 6;
+    bool odrive0Error = 7;	
+    bool odrv0ClearErrors = 8;
+    bool odrive1Axis0Error = 9;
+    bool odrive1Axis1Error = 10;
+    bool odrive1Error = 11;	
+    bool odrv1ClearErrors = 12;
+
+    bool safetyMode = 13;
+}

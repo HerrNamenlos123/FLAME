@@ -29,7 +29,9 @@ find_package(FLAME_Protocol REQUIRED)
 file(GLOB_RECURSE HEADER_FILES CONFIGURE_DEPENDS "include/*")
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS "src/*")
 
-add_library(${PROJECT_NAME} STATIC ${SRC_FILES} ${HEADER_FILES})
+list(APPEND PROTO_FILES "proto/FLAME.pb.cc")
+
+add_library(${PROJECT_NAME} STATIC ${SRC_FILES} ${HEADER_FILES} ${PROTO_FILES})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS OFF)
 
@@ -40,6 +42,11 @@ endif()
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
+)
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/proto>
+    $<INSTALL_INTERFACE:>
 )
 
 
@@ -79,6 +86,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source Files" FILES ${SRC_FILES})
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/include" PREFIX "Header Files" FILES ${HEADER_FILES})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/proto" PREFIX "Protobuf Files" FILES ${PROTO_FILES})
 
 
 
