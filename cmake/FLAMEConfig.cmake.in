@@ -3,8 +3,10 @@ include(CMakeFindDependencyMacro)
 #set(my-config-var @my-config-var@)
 
 # Same syntax as find_package
-find_dependency(NetLib REQUIRED)
+find_dependency(asio REQUIRED)
+find_dependency(spdlog REQUIRED)
 find_dependency(FLAME_Protocol REQUIRED)
+find_dependency(Protobuf REQUIRED)
 
 # Any extra setup
 

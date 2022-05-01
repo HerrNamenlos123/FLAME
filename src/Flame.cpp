@@ -5,7 +5,7 @@
 #include "Log.h"
 #include "Flame.h"
 #include "FLAME_Protocol.h"
-#include "NetLib.h"
+#include "networking.h"
 
 FLAME_Protocol::FLAME_Instance protocolInstance;
 FLAME::Instance flameInstance;
@@ -20,7 +20,7 @@ uint32_t getLocalIP() {
 }
 
 void writeUDP(uint32_t targetIP, uint16_t targetPort, uint8_t* data, uint8_t length) {
-	NetLib::SendUDP(toString(targetIP), targetPort, data, length);
+	net::sendUDP(toString(targetIP), targetPort, data, length);
 }
 
 void packetReceived(uint8_t* packet, size_t packetSize) {
@@ -70,11 +70,11 @@ void sendDiscoveryPackets() {
 	uint8_t discoveryBuffer[FLAME_PROTOCOL_DISCOVERY_PACKET_LENGTH];
 	FLAME_Protocol::generatePacket(discoveryBuffer);
 
-	auto interfaces = NetLib::GetNetworkInterfaces();
+	auto interfaces = net::getNetworkInterfaces();
 	for (auto& interface : interfaces) {
 		if (interface.address.length() > 0) {
 			if (SplitString(interface.address, '.')[0] != "127") {
-				NetLib::SendUDP(NetLib::CreateBroadcastAddress(interface), 22500, discoveryBuffer, FLAME_PROTOCOL_DISCOVERY_PACKET_LENGTH, true);
+				net::sendUDP(net::createBroadcastAddress(interface), 22500, discoveryBuffer, FLAME_PROTOCOL_DISCOVERY_PACKET_LENGTH, true);
 			}
 		}
 	}
@@ -109,9 +109,9 @@ void updateSystem() {
 void FlameTest() {
 
 	LOG_INFO("Constructing FLAME backend");
-	NetLib::SetLogLevel(NetLib::LOG_LEVEL_WARN);
-	NetLib::UDPServerAsync udpListener(packetReceived, FLAME_PROTOCOL_UDP_TARGET_PORT);
-	std::unique_ptr<NetLib::UDPClient> udpSender;
+	NETWORKING_SET_LOGLEVEL(spdlog::level::warn);
+	net::UDPServerAsync udpListener(packetReceived, FLAME_PROTOCOL_UDP_TARGET_PORT);
+	std::unique_ptr<net::UDPClient> udpSender;
 	std::string currentIP = "";
 
 	LOG_INFO("Sending discovery packets");
@@ -131,7 +131,7 @@ void FlameTest() {
 			if (flameInstance.getClientIP() != currentIP) {
 				udpSender.reset();
 				currentIP = flameInstance.getClientIP();
-				udpSender = std::make_unique<NetLib::UDPClient>(currentIP, FLAME_PROTOCOL_UDP_TARGET_PORT);
+				udpSender = std::make_unique<net::UDPClient>(currentIP, FLAME_PROTOCOL_UDP_TARGET_PORT);
 			}
 
 			updateSystem();

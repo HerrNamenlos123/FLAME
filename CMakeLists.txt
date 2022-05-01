@@ -1,23 +1,33 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(FLAME VERSION 1.0.0 LANGUAGES CXX)
+project(FLAME VERSION 1.0.0 LANGUAGES C CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
 
 
-################
-# Dependencies #
-################
 
-find_package(NetLib REQUIRED)
-find_package(FLAME_Protocol REQUIRED)
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose Release or Debug" FORCE)
+endif()
 
 
 
 ##################################
 # Options: Library configuration #
 ##################################
+
+find_package(spdlog REQUIRED)
+find_package(asio REQUIRED)
+find_package(FLAME_Protocol REQUIRED)
+find_package(Protobuf REQUIRED)
+
+
+
+################
+# Dependencies #
+################
+
 
 
 
@@ -26,30 +36,31 @@ find_package(FLAME_Protocol REQUIRED)
 # Static library definition #
 #############################
 
-file(GLOB_RECURSE HEADER_FILES CONFIGURE_DEPENDS "include/*")
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS "src/*")
+file(GLOB_RECURSE HEADER_FILES CONFIGURE_DEPENDS "include/*")
+file(GLOB_RECURSE CONFIG_FILES CONFIGURE_DEPENDS "cmake/*")
+list(APPEND PROTO_FILES "proto/FLAME.pb.h" "proto/FLAME.pb.cc")
+list(APPEND CONFIG_FILES "${CMAKE_SOURCE_DIR}/CMakeLists.txt")
+list(APPEND CONFIG_FILES "${CMAKE_SOURCE_DIR}/conanfile.txt")
 
-list(APPEND PROTO_FILES "proto/FLAME.pb.cc")
-
-add_library(${PROJECT_NAME} STATIC ${SRC_FILES} ${HEADER_FILES} ${PROTO_FILES})
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
-set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS OFF)
-
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose Release or Debug" FORCE)
-endif()
+add_library(${PROJECT_NAME} STATIC ${SRC_FILES} ${PROTO_FILES} ${HEADER_FILES} ${CONFIG_FILES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/proto>
-    $<INSTALL_INTERFACE:>
-)
+target_include_directories(${PROJECT_NAME} PRIVATE "proto")
 
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+set_target_properties(${PROJECT_NAME} PROPERTIES C_STANDARD 11)
+set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS OFF)
 
+if(MSVC)
+    set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wno-psabi)
+endif()
 
 
 ############################
@@ -67,13 +78,20 @@ endif()
 
 
 
-
 ###########
 # Linking #
 ###########
 
-target_link_libraries(${PROJECT_NAME} NetLib::NetLib)
+target_link_libraries(${PROJECT_NAME} spdlog::spdlog)
+target_link_libraries(${PROJECT_NAME} asio::asio)
 target_link_libraries(${PROJECT_NAME} FLAME_Protocol::FLAME_Protocol)
+target_link_libraries(${PROJECT_NAME} protobuf::protobuf)
+
+
+
+#######################
+# Precompiled Headers #
+#######################
 
 
 
@@ -84,9 +102,16 @@ target_link_libraries(${PROJECT_NAME} FLAME_Protocol::FLAME_Protocol)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source Files" FILES ${SRC_FILES})
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/include" PREFIX "Header Files" FILES ${HEADER_FILES})
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/proto" PREFIX "Protobuf Files" FILES ${PROTO_FILES})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "src" FILES ${SRC_FILES})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/include" PREFIX "include" FILES ${HEADER_FILES})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/proto" PREFIX "proto" FILES ${PROTO_FILES})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${CONFIG_FILES})
+
+
+##################
+# Subdirectories #
+##################
+
 
 
 
@@ -138,4 +163,3 @@ if (WIN32)
         set (CMAKE_INSTALL_PREFIX "C:/dev" CACHE PATH "default install path" FORCE)
     endif ()
 endif ()
-
