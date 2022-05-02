@@ -20,7 +20,6 @@ endif()
 find_package(spdlog REQUIRED)
 find_package(asio REQUIRED)
 find_package(FLAME_Protocol REQUIRED)
-find_package(Protobuf REQUIRED)
 
 
 
@@ -39,18 +38,15 @@ find_package(Protobuf REQUIRED)
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS "src/*")
 file(GLOB_RECURSE HEADER_FILES CONFIGURE_DEPENDS "include/*")
 file(GLOB_RECURSE CONFIG_FILES CONFIGURE_DEPENDS "cmake/*")
-list(APPEND PROTO_FILES "proto/FLAME.pb.h" "proto/FLAME.pb.cc")
 list(APPEND CONFIG_FILES "${CMAKE_SOURCE_DIR}/CMakeLists.txt")
 list(APPEND CONFIG_FILES "${CMAKE_SOURCE_DIR}/conanfile.txt")
 
-add_library(${PROJECT_NAME} STATIC ${SRC_FILES} ${PROTO_FILES} ${HEADER_FILES} ${CONFIG_FILES})
+add_library(${PROJECT_NAME} STATIC ${SRC_FILES} ${HEADER_FILES} ${CONFIG_FILES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
-
-target_include_directories(${PROJECT_NAME} PRIVATE "proto")
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 set_target_properties(${PROJECT_NAME} PROPERTIES C_STANDARD 11)
@@ -85,7 +81,6 @@ endif()
 target_link_libraries(${PROJECT_NAME} spdlog::spdlog)
 target_link_libraries(${PROJECT_NAME} asio::asio)
 target_link_libraries(${PROJECT_NAME} FLAME_Protocol::FLAME_Protocol)
-target_link_libraries(${PROJECT_NAME} protobuf::protobuf)
 
 
 
@@ -104,7 +99,6 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "src" FILES ${SRC_FILES})
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/include" PREFIX "include" FILES ${HEADER_FILES})
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/proto" PREFIX "proto" FILES ${PROTO_FILES})
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${CONFIG_FILES})
 
 

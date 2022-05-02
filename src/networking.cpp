@@ -112,8 +112,10 @@ namespace net {
 				str += std::to_string(data[i]);
 				str += ", ";
 			}
-			str.pop_back();
-			str.pop_back();
+			if (length > 0) {
+				str.pop_back();
+				str.pop_back();
+			}
 			NETWORKING_LOG_INFO("[SendUDP()]: Packet sent to {}:{}", ipAddress.to_string(), port);
 			NETWORKING_LOG_TRACE("[SendUDP()]: Packet sent to {}:{} -> [{}] -> \"{}\"", ipAddress.to_string(), port, str, std::string((const char*)data, length));
 
@@ -218,6 +220,10 @@ namespace net {
 
 	size_t UDPClient::send(const std::string& data) {
 		return send((uint8_t*)data.c_str(), data.length());
+	}
+
+	std::string UDPClient::ip() {
+		return members->remote_endpoint.address().to_string();
 	}
 
     void UDPClient::logPacket(uint8_t* data, size_t length, const std::string& ipAddress, uint16_t port) {
@@ -393,8 +399,10 @@ namespace net {
 			str += std::to_string(data[i]);
 			str += ", ";
 		}
-		str.pop_back();
-		str.pop_back();
+		if (length > 0) {
+			str.pop_back();
+			str.pop_back();
+		}
 		if (!suppressLogging) NETWORKING_LOG_INFO("[UDPServerAsync]: Packet received from {}:{}", ipAddress, port);
 		if (!suppressLogging) 
 			NETWORKING_LOG_TRACE("[UDPServerAsync]: Packet received from {}:{} -> [{}] -> \"{}\"", 
@@ -677,8 +685,14 @@ namespace net {
 		return JoinStrings(ipParts, ".");
 	}
 
+	std::string ipToString(uint32_t ip) {
+		auto _ip = asio::ip::address_v4(ip);
+		return _ip.to_string();
+	}
+
 	uint32_t ipToBytes(const std::string& ip) {
-		return inet_addr(ip.c_str());
+		auto _ip = asio::ip::address_v4::from_string(ip);
+		return _ip.to_ulong();
 	}
 
 }

@@ -7,8 +7,12 @@
 #include "FLAME_Protocol.h"
 #include "networking.h"
 
-FLAME_Protocol::FLAME_Instance protocolInstance;
-FLAME::Instance flameInstance;
+#include "FLAME.pb.h"
+
+net::UDPServer udpListener(FLAME_PROTOCOL_UDP_TARGET_PORT);
+std::unique_ptr<net::UDPClient> udpSender;
+uint32_t oldTime = getMicros();
+uint32_t interval = 10000;
 
 uint32_t getMicros() {
 	using namespace std::chrono;
@@ -20,39 +24,15 @@ uint32_t getLocalIP() {
 }
 
 void writeUDP(uint32_t targetIP, uint16_t targetPort, uint8_t* data, uint8_t length) {
-	net::sendUDP(toString(targetIP), targetPort, data, length);
+	net::sendUDP(net::ipToString(targetIP), targetPort, data, length);
 }
 
-void packetReceived(uint8_t* packet, size_t packetSize) {
+void writeUDPBroadcast(uint32_t targetIP, uint16_t targetPort, uint8_t* data, uint8_t length) {
+	net::sendUDP(net::ipToString(targetIP), targetPort, data, length, true);
+}
 
-	if (packetSize == 0)
-		return;
-
-	if (packetSize == FLAME_PROTOCOL_DISCOVERY_RESPONSE_LENGTH) {
-		FLAME_Protocol::DiscoveryResponse response;
-		if (FLAME_Protocol::parsePacket(&response, packet)) {
-			flameInstance.setClientIP(response.ipAddress);
-			//LOG_INFO("Received Discovery Packet from {}", instance.getClientIP());
-		}
-		else {
-			LOG_ERROR("Packet invalid");
-		}
-
-	}
-
-	if (packetSize == FLAME_PROTOCOL_REVIEW_PACKET_LENGTH) {
-		FLAME_Protocol::ReviewPacket review;
-		if (parsePacket(&review, packet)) {
-			flameInstance.setEndpoint(review.id, review.data);
-
-        	if (review.id >= 0 && review.id < sizeof(protocolInstance.registers) / sizeof(protocolInstance.registers[0])) {
-        	    protocolInstance.registers[review.id] = review.data;
-        	}
-		}
-		else {
-			LOG_ERROR("Packet invalid");
-		}
-	}
+void packetReceived(const net::NetworkPacket& packet) {
+	FLAME_Protocol::packetReceived(&packet.data[0], packet.data.size(), net::ipToBytes(packet.remoteIP), packet.remotePort);
 }
 
 std::vector<std::string> SplitString(std::string str, char delimeter) {
@@ -67,42 +47,52 @@ std::vector<std::string> SplitString(std::string str, char delimeter) {
 }
 
 void sendDiscoveryPackets() {
-	uint8_t discoveryBuffer[FLAME_PROTOCOL_DISCOVERY_PACKET_LENGTH];
-	FLAME_Protocol::generatePacket(discoveryBuffer);
 
 	auto interfaces = net::getNetworkInterfaces();
 	for (auto& interface : interfaces) {
 		if (interface.address.length() > 0) {
 			if (SplitString(interface.address, '.')[0] != "127") {
-				net::sendUDP(net::createBroadcastAddress(interface), 22500, discoveryBuffer, FLAME_PROTOCOL_DISCOVERY_PACKET_LENGTH, true);
+				FLAME_Protocol::sendDiscoveryPacket(net::ipToBytes(net::createBroadcastAddress(interface)));
 			}
 		}
 	}
 }
 
-std::vector<uint8_t> GenerateControlPacket() {
-	std::vector<uint8_t> buffer(FLAME_PROTOCOL_CONTROL_PACKET_LENGTH, 0);
-	static uint8_t endpointID = 4; 
-	FLAME_Protocol::ControlPacket cp;
-	cp.axis1 = protocolInstance.desiredAxis1;
-	cp.axis2 = protocolInstance.desiredAxis2;
-	cp.axis3 = protocolInstance.desiredAxis3;
-	cp.axis4 = protocolInstance.desiredAxis4;
-	cp.id = endpointID;
-	cp.additional = protocolInstance.registers[endpointID];
-	endpointID++;
-	if (endpointID >= sizeof(protocolInstance.registers) / sizeof(protocolInstance.registers[0])) {
-        endpointID = 4;
-    }
-	generatePacket(&cp, &buffer[0]);
-	return buffer;
+void updateValues() {
+	auto& mcu = FLAME_Protocol::toMCU;
+	mcu.clearSafetyMode = true;
 }
 
-void updateSystem() {
+void update() {
 
-	protocolInstance.safetyMode = false;
-	protocolInstance.desiredAxis1 = sin(getMicros() / 1000000.f) * 2;
-	LOG_INFO("Position: {}", (float)protocolInstance.desiredAxis1);
+	auto packet = udpListener.read();
+	if (packet.has_value()) {
+		packetReceived(packet.value());
+	}
+
+	if (FLAME_Protocol::mcu_ip == 0) {
+		return;
+	}
+
+	if (getMicros() >= oldTime + interval) {
+		oldTime = getMicros();
+
+		if (udpSender) {
+			if (net::ipToBytes(udpSender->ip()) != FLAME_Protocol::mcu_ip) {
+				udpSender.reset();
+			}
+		}
+		else {
+			udpSender = std::make_unique<net::UDPClient>(net::ipToString(FLAME_Protocol::mcu_ip), FLAME_PROTOCOL_UDP_TARGET_PORT);
+			LOG_INFO("Discovered client at {}", net::ipToString(FLAME_Protocol::mcu_ip));
+		}
+
+		updateValues();
+
+		if (udpSender) {
+			FLAME_Protocol::sendControlPacket();
+		}
+	}
 
 }
 
@@ -110,38 +100,13 @@ void FlameTest() {
 
 	LOG_INFO("Constructing FLAME backend");
 	NETWORKING_SET_LOGLEVEL(spdlog::level::warn);
-	net::UDPServerAsync udpListener(packetReceived, FLAME_PROTOCOL_UDP_TARGET_PORT);
-	std::unique_ptr<net::UDPClient> udpSender;
-	std::string currentIP = "";
 
 	LOG_INFO("Sending discovery packets");
 	sendDiscoveryPackets();
 
-	LOG_INFO("Waiting for responses");
-	while (flameInstance.getClientIP().empty()) {}
-
-	LOG_INFO("FLAME client discovered at {}", flameInstance.getClientIP());
-
-	uint64_t old = getMicros();
-	uint64_t interval = 10000;
 	while (true) {
-		if (getMicros() >= old + interval) {
-			old = getMicros();
-
-			if (flameInstance.getClientIP() != currentIP) {
-				udpSender.reset();
-				currentIP = flameInstance.getClientIP();
-				udpSender = std::make_unique<net::UDPClient>(currentIP, FLAME_PROTOCOL_UDP_TARGET_PORT);
-			}
-
-			updateSystem();
-			if (udpSender) {
-				auto packet = GenerateControlPacket();
-				udpSender->send(&packet[0], packet.size());
-			}
-		}
+		update();
+		std::this_thread::sleep_for(std::chrono::microseconds(interval / 10));
 	}
-
-
 
 }

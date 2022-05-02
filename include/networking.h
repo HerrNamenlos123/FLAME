@@ -107,6 +107,8 @@ namespace net {
 		size_t send(const char* data);
 		size_t send(const std::string& data);
 
+		std::string ip();
+
     private:
         void logPacket(uint8_t* data, size_t length, const std::string& ipAddress, uint16_t port);
 
@@ -250,6 +252,7 @@ namespace net {
 
 	std::string createBroadcastAddress(const NetworkInterface& ifc);
 
+	std::string ipToString(uint32_t ip);
 	uint32_t ipToBytes(const std::string& ip);
 
 }
