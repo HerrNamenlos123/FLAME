@@ -1,6 +1,7 @@
 #include <string>
 #include <iostream>
 #include <chrono>
+#include <thread>
 
 #include "Log.h"
 #include "Flame.h"
@@ -13,6 +14,9 @@ net::UDPServer udpListener(FLAME_PROTOCOL_UDP_TARGET_PORT);
 std::unique_ptr<net::UDPClient> udpSender;
 uint32_t oldTime = getMicros();
 uint32_t interval = 10000;
+
+auto& tx = FLAME_Protocol::toMCU;
+auto& rx = FLAME_Protocol::toPC;
 
 uint32_t getMicros() {
 	using namespace std::chrono;
@@ -59,8 +63,8 @@ void sendDiscoveryPackets() {
 }
 
 void updateValues() {
-	auto& mcu = FLAME_Protocol::toMCU;
-	mcu.clearSafetyMode = true;
+	tx.clearSafetyMode = true;
+	tx.desiredAxis2 = sin(getMicros() / 1000000.0) * 10 + 30;
 }
 
 void update() {
@@ -91,6 +95,7 @@ void update() {
 
 		if (udpSender) {
 			FLAME_Protocol::sendControlPacket();
+			LOG_WARN("Sending");
 		}
 	}
 
@@ -103,6 +108,8 @@ void FlameTest() {
 
 	LOG_INFO("Sending discovery packets");
 	sendDiscoveryPackets();
+
+	FLAME_Protocol::mcu_ip = net::ipToBytes("10.0.0.50");
 
 	while (true) {
 		update();
