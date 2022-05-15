@@ -13,7 +13,7 @@
 net::UDPServer udpListener(FLAME_PROTOCOL_UDP_TARGET_PORT);
 std::unique_ptr<net::UDPClient> udpSender;
 uint32_t oldTime = getMicros();
-uint32_t interval = 10000;
+uint32_t interval = 5000;
 
 auto& tx = FLAME_Protocol::toMCU;
 auto& rx = FLAME_Protocol::toPC;
@@ -62,9 +62,23 @@ void sendDiscoveryPackets() {
 	}
 }
 
+#define RAD_TO_DEG 57.295779513082320876798154814105
+#define degrees(rad) ((rad)*RAD_TO_DEG)
+
+size_t cnt = 0;
+
 void updateValues() {
 	tx.clearSafetyMode = true;
-	tx.desiredAxis2 = sin(getMicros() / 1000000.0) * 10 + 30;
+	float speed = 0.1;
+	if ((cnt / 1000) % 2 == 0) {
+		tx.desiredAxis2 = degrees(asin(22.f / 57.f));
+	}
+	else {
+		tx.desiredAxis2 = degrees(asin(22.f / 57.f)) + 5;
+	}
+	LOG_WARN("Pos: {}", tx.desiredAxis2);
+	//tx.desiredAxis2 = sin(getMicros() / 600000.0) * 30 + 50;
+	cnt++;
 }
 
 void update() {
