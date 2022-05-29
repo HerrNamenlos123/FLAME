@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.5)
 
 set(TARGET_NAME FLAME)
 project(${TARGET_NAME} VERSION 1.0.0 LANGUAGES C CXX)
@@ -18,9 +18,7 @@ endif()
 # Options: Library configuration #
 ##################################
 
-find_package(spdlog REQUIRED)
-find_package(asio REQUIRED)
-find_package(FLAME_Protocol REQUIRED)
+add_subdirectory(modules/FLAME_Protocol)
 
 
 
@@ -36,20 +34,26 @@ find_package(FLAME_Protocol REQUIRED)
 # Static library definition #
 #############################
 
-file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS "src/*")
-file(GLOB_RECURSE HEADER_FILES CONFIGURE_DEPENDS "include/*")
-file(GLOB_RECURSE CONFIG_FILES CONFIGURE_DEPENDS "cmake/*")
-list(APPEND CONFIG_FILES "${CMAKE_SOURCE_DIR}/CMakeLists.txt")
-list(APPEND CONFIG_FILES "${CMAKE_SOURCE_DIR}/conanfile.txt")
+file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/src/*")
+file(GLOB_RECURSE HEADER_FILES CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/include/*")
+file(GLOB_RECURSE CONFIG_FILES CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/cmake/*")
+list(APPEND CONFIG_FILES "${CMAKE_CURRENT_LIST_DIR}/CMakeLists.txt")
+list(APPEND CONFIG_FILES "${CMAKE_CURRENT_LIST_DIR}/conanfile.txt")
 
 add_library(${TARGET_NAME} STATIC ${SRC_FILES} ${HEADER_FILES} ${CONFIG_FILES})
+add_library(${TARGET_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
 
 target_include_directories(${TARGET_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
 
-target_compile_features(${TARGET_NAME} PRIVATE cxx_std_17)
+if (MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
+else ()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+endif ()
+
 set_target_properties(${TARGET_NAME} PROPERTIES C_STANDARD 11)
 set_target_properties(${TARGET_NAME} PROPERTIES CXX_EXTENSIONS OFF)
 
@@ -72,6 +76,7 @@ if (WIN32)
     )
 endif()
 
+target_compile_definitions(${TARGET_NAME} PUBLIC SPDLOG_COMPILED_LIB)
 
 
 
@@ -79,8 +84,6 @@ endif()
 # Linking #
 ###########
 
-target_link_libraries(${TARGET_NAME} spdlog::spdlog)
-target_link_libraries(${TARGET_NAME} asio::asio)
 target_link_libraries(${TARGET_NAME} FLAME_Protocol::FLAME_Protocol)
 
 
@@ -96,11 +99,11 @@ target_link_libraries(${TARGET_NAME} FLAME_Protocol::FLAME_Protocol)
 # IDE #
 #######
 
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+#set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "src" FILES ${SRC_FILES})
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/include" PREFIX "include" FILES ${HEADER_FILES})
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${CONFIG_FILES})
+#source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "src" FILES ${SRC_FILES})
+#source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/include" PREFIX "include" FILES ${HEADER_FILES})
+#source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${CONFIG_FILES})
 
 
 ##################
