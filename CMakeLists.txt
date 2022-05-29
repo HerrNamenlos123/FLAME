@@ -85,6 +85,7 @@ target_compile_definitions(${TARGET_NAME} PUBLIC SPDLOG_COMPILED_LIB)
 ###########
 
 target_link_libraries(${TARGET_NAME} FLAME_Protocol::FLAME_Protocol)
+target_link_libraries(${TARGET_NAME} pthread)
 
 
 
