@@ -9,6 +9,8 @@
 
 #include "FLAME.pb.h"
 
+#include <windows.h>
+
 net::UDPServer udpListener(FLAME_PROTOCOL_UDP_TARGET_PORT);
 std::unique_ptr<net::UDPClient> udpSender;
 uint32_t oldTime = getMicros();
@@ -29,6 +31,7 @@ void writeUDP(uint32_t targetIP, uint16_t targetPort, uint8_t* data, uint8_t len
 
 void writeUDPBroadcast(uint32_t targetIP, uint16_t targetPort, uint8_t* data, uint8_t length) {
 	net::sendUDP(net::ipToString(targetIP), targetPort, data, length, true);
+	LOG_DEBUG("Broadcast: {}", net::ipToString(targetIP));
 }
 
 void packetReceived(const net::NetworkPacket& packet) {
@@ -61,6 +64,28 @@ void sendDiscoveryPackets() {
 void updateValues() {
 	auto& mcu = FLAME_Protocol::toMCU;
 	mcu.clearSafetyMode = true;
+
+	static uint32_t old = getMicros();
+	double dt = (getMicros() - old) / 1000000.0;
+	old = getMicros();
+
+	float speed = 10.f;
+	if (GetKeyState('Q') & 0x8000) {
+		mcu.desiredAxis1 += speed * dt;
+	}
+	if (GetKeyState('A') & 0x8000) {
+		mcu.desiredAxis1 -= speed * dt;
+	}
+	if (GetKeyState('W') & 0x8000) {
+		mcu.desiredAxis2 += speed * dt;
+	}
+	if (GetKeyState('S') & 0x8000) {
+		mcu.desiredAxis2 -= speed * dt;
+	}
+
+	//mcu.desiredAxis1 = sin(getMicros() / 500000.0) * 10 + 40;
+	//mcu.desiredAxis2 = sin(getMicros() / 500000.0) * 10 + 40;
+	LOG_WARN("{}", mcu.desiredAxis1);
 }
 
 void update() {
@@ -103,6 +128,8 @@ void FlameTest() {
 
 	LOG_INFO("Sending discovery packets");
 	sendDiscoveryPackets();
+
+	//FLAME_Protocol::sendDiscoveryPacket(net::ipToBytes("10.20.6.100"));
 
 	while (true) {
 		update();
