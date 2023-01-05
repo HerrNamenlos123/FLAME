@@ -1,7 +1,6 @@
 [requires]
 asio/1.22.1
 spdlog/1.10.0
-protobuf/3.19.2
 
 [generators]
 CMakeToolchain

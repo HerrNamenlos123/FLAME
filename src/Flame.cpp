@@ -1,6 +1,7 @@
 #include <string>
 #include <iostream>
 #include <chrono>
+#include <thread>
 
 #include "Log.h"
 #include "Flame.h"
@@ -14,7 +15,10 @@
 net::UDPServer udpListener(FLAME_PROTOCOL_UDP_TARGET_PORT);
 std::unique_ptr<net::UDPClient> udpSender;
 uint32_t oldTime = getMicros();
-uint32_t interval = 10000;
+uint32_t interval = 5000;
+
+auto& tx = FLAME_Protocol::toMCU;
+auto& rx = FLAME_Protocol::toPC;
 
 uint32_t getMicros() {
 	using namespace std::chrono;
@@ -61,31 +65,23 @@ void sendDiscoveryPackets() {
 	}
 }
 
+#define RAD_TO_DEG 57.295779513082320876798154814105
+#define degrees(rad) ((rad)*RAD_TO_DEG)
+
+size_t cnt = 0;
+
 void updateValues() {
-	auto& mcu = FLAME_Protocol::toMCU;
-	mcu.clearSafetyMode = true;
-
-	static uint32_t old = getMicros();
-	double dt = (getMicros() - old) / 1000000.0;
-	old = getMicros();
-
-	float speed = 10.f;
-	if (GetKeyState('Q') & 0x8000) {
-		mcu.desiredAxis1 += speed * dt;
+	tx.clearSafetyMode = true;
+	float speed = 0.1;
+	if ((cnt / 1000) % 2 == 0) {
+		tx.desiredAxis2 = degrees(asin(22.f / 57.f));
 	}
-	if (GetKeyState('A') & 0x8000) {
-		mcu.desiredAxis1 -= speed * dt;
+	else {
+		tx.desiredAxis2 = degrees(asin(22.f / 57.f)) + 5;
 	}
-	if (GetKeyState('W') & 0x8000) {
-		mcu.desiredAxis2 += speed * dt;
-	}
-	if (GetKeyState('S') & 0x8000) {
-		mcu.desiredAxis2 -= speed * dt;
-	}
-
-	//mcu.desiredAxis1 = sin(getMicros() / 500000.0) * 10 + 40;
-	//mcu.desiredAxis2 = sin(getMicros() / 500000.0) * 10 + 40;
-	LOG_WARN("{}", mcu.desiredAxis1);
+	LOG_WARN("Pos: {}", tx.desiredAxis2);
+	//tx.desiredAxis2 = sin(getMicros() / 600000.0) * 30 + 50;
+	cnt++;
 }
 
 void update() {
@@ -116,6 +112,7 @@ void update() {
 
 		if (udpSender) {
 			FLAME_Protocol::sendControlPacket();
+			LOG_WARN("Sending");
 		}
 	}
 
@@ -129,7 +126,7 @@ void FlameTest() {
 	LOG_INFO("Sending discovery packets");
 	sendDiscoveryPackets();
 
-	//FLAME_Protocol::sendDiscoveryPacket(net::ipToBytes("10.20.6.100"));
+	FLAME_Protocol::mcu_ip = net::ipToBytes("10.0.0.50");
 
 	while (true) {
 		update();
